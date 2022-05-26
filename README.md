@@ -1,3 +1,7 @@
+my attempt at converting std:: functions to drop-in replacements such as ustd and axr
+
+
+
 <p>This library is <strong>deprecated</strong>. You can directly use the WebSockets library (https://github.com/Links2004/arduinoWebSockets). It supports a SocketIOclient class. See the example there.</p>
 
 <h1 align="center">socket.io-client</h1>
