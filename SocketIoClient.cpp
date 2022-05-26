@@ -17,12 +17,19 @@ const String getEventPayload(const String msg) {
 
 static void hexdump(const uint32_t* src, size_t count) {
     for (size_t i = 0; i < count; ++i) {
-        Serial.printf("%08x ", *src);
+	char buff[50];
+	sprintf(buff, "%08x ", *src);
+        Serial.print(buff);
         ++src;
         if ((i + 1) % 4 == 0) {
-            Serial.printf("\n");
+            Serial.print("\n");
         }
     }
+}
+void SocketIoClient::configureEIOping(bool disableHeartbeat){
+	_disableHeartbeat=disableHeartbeat;
+
+
 }
 
 void SocketIoClient::webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -53,10 +60,6 @@ void SocketIoClient::webSocketEvent(WStype_t type, uint8_t * payload, size_t len
 	}
 }
 
-void SocketIoClient::beginSSL(const char* host, const int port, const char* url, const char* fingerprint) {
-	_webSocket.beginSSL(host, port, url, fingerprint);
-    initialize();
-}
 
 void SocketIoClient::begin(const char* host, const int port, const char* url) {
 	_webSocket.begin(host, port, url);
@@ -64,7 +67,13 @@ void SocketIoClient::begin(const char* host, const int port, const char* url) {
 }
 
 void SocketIoClient::initialize() {
-    _webSocket.onEvent(std::bind(&SocketIoClient::webSocketEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	
+     if (_webSocket.EIOequalsfour()){
+         SOCKETIOCLIENT_DEBUG("[SIoC] Found EIO=4, disable ping on client\n" );
+	 configureEIOping(true);
+    }
+
+    //_webSocket.onEvent(std::bind(&SocketIoClient::webSocketEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	_lastPing = millis();
 }
 
@@ -79,13 +88,15 @@ void SocketIoClient::loop() {
 		}
 	}
 
-	if(millis() - _lastPing > PING_INTERVAL) {
-		_webSocket.sendTXT("2");
-		_lastPing = millis();
+	if(!_disableHeartbeat){
+		if(millis() - _lastPing > PING_INTERVAL) {
+			_webSocket.sendTXT("2");
+			_lastPing = millis();
+		}
 	}
 }
 
-void SocketIoClient::on(const char* event, std::function<void (const char * payload, size_t length)> func) {
+void SocketIoClient::on(const char* event, ustd::function<void (const char * payload, size_t length)> func) {
 	_events[event] = func;
 }
 
@@ -127,6 +138,4 @@ void SocketIoClient::disconnect()
 	trigger("disconnect", NULL, 0);
 }
 
-void SocketIoClient::setAuthorization(const char * user, const char * password) {
-    _webSocket.setAuthorization(user, password);
-}
+
